@@ -326,10 +326,98 @@ ggplot(filter(seat_data, level != "suite")) +
   theme_light() +
   NULL
 
-first_round_2018 <- seat_data %>% 
-  filter(Season == "2018", Round == 1, Home_game_num == 1, daysBeforeGame < 0.4 & daysBeforeGame > 0.39) %>% 
-  group_by(daysBeforeGame, Season) %>% 
-  summarize(seats = sum(quantity))
+day_of_game <- seat_data %>% 
+  filter(daysBeforeGame <= 1 & daysBeforeGame >= 0 & Round %in% c(1, 2) & Home_game_num != 4 & !(Season == "2018" & Round == 2 & Home_game_num %in% c(3, 4)) & !(Season == "2019" & Round == 2 & Home_game_num == 4)) %>% 
+  group_by(daysBeforeGame, Season, Home_game_num, Round) %>% 
+  summarize(seats = sum(quantity)) %>% 
+  ungroup() %>% 
+  mutate(game = paste("R", Round, "HG", Home_game_num, sep="")) %>% 
+  select(-Round, -Home_game_num) %>% 
+  spread(game, seats) %>% 
+  group_by(Season) %>% 
+  summarize(R1HG1 = mean(R1HG1, na.rm = T), 
+            R1HG2 = mean(R1HG2, na.rm = T),
+            R1HG3 = mean(R1HG3, na.rm = T),
+            R2HG1 = NA,
+            R2HG2 = NA,
+            R2HG3 = mean(R2HG3, na.rm = T))
+
+day_of_game_summary <- day_of_game %>% 
+  summarize(Season = "increase", 
+            R1HG1 = ((day_of_game$R1HG1[2] / day_of_game$R1HG1[1]) - 1),
+            R1HG2 = NA,
+            R1HG3 = NA,
+            R2HG1 = NA,
+            R2HG2 = NA,
+            R2HG3 = NA)
+
+day_of_game <- rbind(day_of_game, day_of_game_summary) %>% select(-R1HG2, -R1HG3, -R2HG1, -R2HG2, -R2HG3)
+
+three_before <- seat_data %>% 
+  filter(daysBeforeGame <= 3 & daysBeforeGame > 1 & Round %in% c(1, 2) & Home_game_num != 4 & !(Season == "2018" & Round == 2 & Home_game_num %in% c(3, 4)) & !(Season == "2019" & Round == 2 & Home_game_num == 4)) %>% 
+  group_by(daysBeforeGame, Season, Home_game_num, Round) %>% 
+  summarize(seats = sum(quantity)) %>% 
+  ungroup() %>% 
+  mutate(game = paste("R", Round, "HG", Home_game_num, sep="")) %>% 
+  select(-Round, -Home_game_num) %>% 
+  spread(game, seats) %>% 
+  group_by(Season) %>% 
+  summarize(R1HG1 = mean(R1HG1, na.rm = T), 
+            R1HG2 = mean(R1HG2, na.rm = T),
+            R1HG3 = mean(R1HG3, na.rm = T),
+            R2HG1 = mean(R2HG1, na.rm = T),
+            R2HG2 = mean(R2HG2, na.rm = T),
+            R2HG3 = mean(R2HG3, na.rm = T))
+
+three_before_summary <- three_before %>% 
+  summarize(Season = "increase", 
+            R1HG1 = ((three_before$R1HG1[2] / three_before$R1HG1[1]) - 1),
+            R1HG2 = ((three_before$R1HG2[2] / three_before$R1HG2[1]) - 1),
+            R1HG3 = ((three_before$R1HG3[2] / three_before$R1HG3[1]) - 1),
+            R2HG1 = ((three_before$R2HG1[2] / three_before$R2HG1[1]) - 1),
+            R2HG2 = ((three_before$R2HG2[2] / three_before$R2HG2[1]) - 1),
+            R2HG3 = ((three_before$R2HG3[2] / three_before$R2HG3[1]) - 1)) %>% 
+  mutate(R1HG1 = round(R1HG1, digits = 4),
+         R1HG2 = round(R1HG2, digits = 4),
+         R1HG3 = round(R1HG3, digits = 4),
+         R2HG1 = round(R2HG1, digits = 4),
+         R2HG2 = round(R2HG2, digits = 4),
+         R2HG3 = round(R2HG3, digits = 4))
+
+three_before <- rbind(three_before, three_before_summary) %>% select(-R1HG1, -R2HG2, -R2HG3)
+
+five_before <- seat_data %>% 
+  filter(daysBeforeGame <= 5 & daysBeforeGame > 3 & Round %in% c(1, 2) & Home_game_num != 4 & !(Season == "2018" & Round == 2 & Home_game_num %in% c(3, 4)) & !(Season == "2019" & Round == 2 & Home_game_num == 4)) %>% 
+  group_by(daysBeforeGame, Season, Home_game_num, Round) %>% 
+  summarize(seats = sum(quantity)) %>% 
+  ungroup() %>% 
+  mutate(game = paste("R", Round, "HG", Home_game_num, sep="")) %>% 
+  select(-Round, -Home_game_num) %>% 
+  spread(game, seats) %>% 
+  group_by(Season) %>% 
+  summarize(R1HG1 = NA, 
+            R1HG2 = mean(R1HG2, na.rm = T),
+            R1HG3 = mean(R1HG3, na.rm = T),
+            R2HG1 = mean(R2HG1, na.rm = T),
+            R2HG2 = mean(R2HG2, na.rm = T),
+            R2HG3 = mean(R2HG3, na.rm = T))
+
+five_before_summary <- five_before %>% 
+  summarize(Season = "increase", 
+            R1HG1 = ((five_before$R1HG1[2] / five_before$R1HG1[1]) - 1),
+            R1HG2 = ((five_before$R1HG2[2] / five_before$R1HG2[1]) - 1),
+            R1HG3 = ((five_before$R1HG3[2] / five_before$R1HG3[1]) - 1),
+            R2HG1 = ((five_before$R2HG1[2] / five_before$R2HG1[1]) - 1),
+            R2HG2 = ((five_before$R2HG2[2] / five_before$R2HG2[1]) - 1),
+            R2HG3 = ((five_before$R2HG3[2] / five_before$R2HG3[1]) - 1)) %>% 
+  mutate(R1HG1 = round(R1HG1, digits = 4),
+         R1HG2 = round(R1HG2, digits = 4),
+         R1HG3 = round(R1HG3, digits = 4),
+         R2HG1 = round(R2HG1, digits = 4),
+         R2HG2 = round(R2HG2, digits = 4),
+         R2HG3 = round(R2HG3, digits = 4))
+
+five_before <- rbind(five_before, five_before_summary) %>% select(-R1HG1, -R1HG2, -R2HG1,-R2HG3)
 
 first_round_2019 <- seat_data %>% 
   filter(Season == "2019", Round == 1, Home_game_num == 1, daysBeforeGame < 0.52 & daysBeforeGame > 0.51) %>% 
@@ -342,6 +430,24 @@ first_round <- rbind(first_round_2018, first_round_2019) %>%
 ggplot(first_round, aes(moment, seats)) + 
   geom_bar(stat = "identity") +
   ggtitle("Seats available for R1 HG1 ~0.5 days before the game by Season") +
+  theme_light()
+
+second_round_2018 <- seat_data %>% 
+  filter(Season == "2018", Round == 2, Home_game_num == 1, daysBeforeGame < 2.73 & daysBeforeGame > 2.72) %>% 
+  group_by(daysBeforeGame, Season) %>% 
+  summarize(seats = sum(quantity))
+
+second_round_2019 <- seat_data %>% 
+  filter(Season == "2019", Round == 2, Home_game_num == 1, daysBeforeGame < 2.55 & daysBeforeGame > 2.54) %>% 
+  group_by(daysBeforeGame, Season) %>% 
+  summarize(seats = sum(quantity))
+
+second_round <- rbind(second_round_2018,second_round_2019) %>% 
+  mutate(moment = paste(Season, " (", round(daysBeforeGame, digits=1), " days before R2 HG1)", sep = ""))
+
+ggplot(second_round, aes(moment, seats)) + 
+  geom_bar(stat = "identity") +
+  ggtitle("Seats available for R2 HG1 ~2.5 days before the game by Season") +
   theme_light()
 
 
